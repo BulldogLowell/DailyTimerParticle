@@ -168,7 +168,13 @@ bool DailyTimer::sync()
   bool currentState = isActive(this);
   if(currentState && autoSync)
   {
-    startTimeCallback();
+    if(startTimeCallback)
+      startTimeCallback();
+  }
+  else if(!currentState && autoSync)
+  {
+    if (endTimeCallback)
+      endTimeCallback();
   }
   return state = currentState;
 }
