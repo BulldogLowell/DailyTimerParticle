@@ -46,6 +46,7 @@ DailyTimer::DailyTimer(byte StartHour, byte StartMinute, EventDays DaysOfTheWeek
   endTimeCallback = NULL;
   instances[instanceCount] = this;
   instanceCount++;
+  timerState = TIMER_ON;
 }
 
 DailyTimer::DailyTimer(bool syncOnPowerup, byte StartHour, byte StartMinute, byte EndHour, byte EndMinute, EventDays DaysOfTheWeek, RandomType type, void(*StartTimeCallback)(), void(*EndTimeCallback)())
@@ -61,6 +62,7 @@ DailyTimer::DailyTimer(bool syncOnPowerup, byte StartHour, byte StartMinute, byt
   startTimeCallback = StartTimeCallback;
   endTimeCallback = EndTimeCallback;
   instances[instanceCount++] = this;
+  timerState = TIMER_ON;
 }
 
 int DailyTimer::getInstanceCount(void) const
@@ -201,6 +203,8 @@ void DailyTimer::update()
 
 bool DailyTimer::isActive(DailyTimer* instance)
 {
+  if (instance->timerState == TIMER_OFF)
+    return false;
   if (instance->currentDay != Time.weekday() && instance->randomType) // once a day, generate new random offsets
   {
     randomSeed(Time.now() + micros());  // not local time on purpose
@@ -281,4 +285,22 @@ time_t DailyTimer::tmConvert_t(int YYYY, byte MM, byte DD, byte hh, byte mm, byt
   t.tm_isdst = 0;
   time_t t_of_day = mktime(&t);
   return t_of_day;
+}
+
+void DailyTimer::manualOn(void)
+{
+  timerState = TIMER_OFF;
+  startTimeCallback();
+}
+
+void DailyTimer::manualOff(void)
+{
+  timerState = TIMER_OFF;
+  endTimeCallback();
+}
+
+void DailyTimer::resume(void)
+{
+  timerState = TIMER_ON;
+  begin();
 }
