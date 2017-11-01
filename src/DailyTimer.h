@@ -54,8 +54,15 @@ class DailyTimer{
     bool begin();
     uint8_t getDays() const;
     static void update();
+    void manualOn(void);
+    void manualOff(void);
+    void resume(void);
 
   protected:
+    enum TimerState{
+      TIMER_OFF,
+      TIMER_ON,
+    }timerState;
     struct TimerTime{ // bounded 00:00 to 23:59
       uint8_t hour;
       uint8_t minute;
@@ -82,3 +89,4 @@ class DailyTimer{
 };
 
 #endif
+
