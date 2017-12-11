@@ -16,6 +16,8 @@ April, 2016
 
 #include "DailyTimer.h"
 
+SYSTEM_THREAD(ENABLED)
+
 void ledOn(void);  // function definitions/prototypes required here
 void ledOff(void);
 void printSomething(void);
@@ -23,20 +25,20 @@ void printSomething(void);
 const byte ledPin = D7;
 
 DailyTimer ledTimer1(
-  true,                             // AutoSync true or false, will run the startTimeCallback() if restarts within the active range or after range changes and you are in the range
-   0,                               // Start Hour
-   0,                               // Start Minute
-   0,                                // End Hour
-   0,                                // End Minute
+  true,                              // AutoSync true or false, will run the startTimeCallback() if restarts within the active range or after range changes and you are in the range
+   14,                               // Start Hour
+   18,                               // Start Minute
+   0,                               // End Hour
+   0,                               // End Minute
   EVERY_DAY,                         // SUNDAYS, MONDAYS, TUESDAYS, WEDNESDAYS, THURSDAYS, FRIDAYS, SATURDAYS, WEEKENDS, WEEKDAYS, or EVERY_DAY
-  FIXED,                            // OPTIONAL - FIXED, RANDOM, RANDOM_START, or RANDOM_END
-  ledOn,                            // pointer to function to execute at Start time, or a Lambda as in this example:
-//  []{digitalWrite(ledPin, HIGH);},  // Lambda equivalent example rather than creating a new function -> no callback function prototypes needed :)
-  ledOff                            // pointer to function to execute at End time
+  FIXED,                             // OPTIONAL - FIXED, RANDOM, RANDOM_START, or RANDOM_END
+  ledOn,                             // pointer to function to execute at Start time, or a Lambda as in this example:
+//  []{digitalWrite(ledPin, HIGH);}, // Lambda equivalent example rather than creating a new function -> no callback function prototypes needed :)
+  ledOff                             // pointer to function to execute at End time
 );
 
 DailyTimer serialPrintTimer(
-  10,
+  16,
   55,
   EVERY_DAY,
   FIXED,
@@ -50,7 +52,8 @@ void setup()
 {
   Serial.begin(9600);
   pinMode(ledPin, OUTPUT);
-  Time.zone(-4);
+  //Time.zone(-4);
+
   Particle.function("SetTimes", setTimes);
   Particle.variable("ActiveTime", ledTimes, STRING);
   Serial.print("Active Timers=");
@@ -67,20 +70,27 @@ void setup()
 
 //  ledTimer1.setRandomDays(3);  // chooses three random days of the week
 
-//  ledTimer1.setStartTime(11, 30); // set the start time
-//  ledTimer1.setEndTime(23, 59);   // and the end time
-
+  ledTimer1.setStartTime(23, 59); // set the start time
+  ledTimer1.setEndTime(0, 2);   // and the end time
   ledTimer1.begin();  // syncs the timer, use it here and after calls to setStartTime
+
+  serialPrintTimer.setStartTime(0,1);
+  serialPrintTimer.begin();
+  
   Serial.print("LedTimer Active days: ");
   Serial.println(ledTimer1.getDays(), BIN);
   serialPrintTimer.begin();
   Serial.print("Serial Print Active days: ");
   Serial.println(serialPrintTimer.getDays(), BIN);
   Particle.publish("pushover", "Started", PRIVATE);
+  waitUntil(Particle.connected);
+  delay(1000);
+  Time.setTime(1513036680);
 }
 
 void loop()
 {
+
   static int lastSecond = 60;
   DailyTimer::update();
   if(Time.second() != lastSecond)
@@ -102,19 +112,22 @@ int setTimes(String command){  // enter time in console:  hh:mm:hh:mm  // start 
     int endMinute = atoi(strtok(NULL, ":"));
     ledTimer1.setStartTime(startHour, startMinute);
     ledTimer1.setEndTime(endHour, endMinute);
-    sprintf(ledTimes, "Start:%d:%02d End:%d%02d", startHour, startMinute, endHour, endMinute);
+    ledTimer1.begin();
+    sprintf(ledTimes, "Start:%d:%02d End:%d%:02d", startHour, startMinute, endHour, endMinute);
     return 1;
 }
 
 void ledOn(void)
 {
   Serial.println("LED ON FUNCTION");
+  Particle.publish("pushover", "LED ON FUNCTION", PRIVATE);
   digitalWrite(ledPin, HIGH);
 }
 
 void ledOff(void)
 {
   Serial.println("LED OFF FUNCTION");
+  Particle.publish("pushover", "LED OFF FUNCTION", PRIVATE);
   digitalWrite(ledPin, LOW);
 }
 
@@ -122,3 +135,4 @@ void printSomething(void)
 {
   Serial.println("Something");
 }
+
